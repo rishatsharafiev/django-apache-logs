@@ -1,0 +1,71 @@
+version: "3"
+networks:
+  backend:
+    driver: ${NETWORKS_DRIVER}
+
+volumes:
+  app_log:
+    driver: ${VOLUMES_DRIVER}
+  nginx_log:
+    driver: ${VOLUMES_DRIVER}
+  postgres:
+    driver: ${VOLUMES_DRIVER}
+
+
+services:
+### Backend Server #########################################
+  app:
+    build:
+      context: ../
+      dockerfile: devops/app/Dockerfile
+    volumes:
+      - app_log:/var/log
+      - ${APP_PATH}:/app
+    ports:
+      - "${APP_SUPERUSER_PORT}:9001"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - SUPERVISOR_USERNAME=${SUPERVISOR_USERNAME}
+      - SUPERVISOR_PASSWORD=${SUPERVISOR_PASSWORD}
+    networks:
+      - backend
+    depends_on:
+      - postgres
+
+### NGINX Server #########################################
+  nginx:
+    build:
+      context: ./nginx
+      args:
+      - APP_UPSTREAM_CONTAINER=${APP_UPSTREAM_CONTAINER}
+      - APP_UPSTREAM_PORT=${APP_UPSTREAM_PORT}
+    volumes:
+      - nginx_log:/var/log
+      - ${NGINX_SITES_PATH}:/etc/nginx/sites-available
+      - ${APP_PATH}/static:/app/static
+      - ${APP_PATH}/media:/app/media
+    ports:
+      - "${NGINX_HOST_HTTP_PORT}:80"
+      - "${NGINX_HOST_HTTPS_PORT}:443"
+    depends_on:
+      - app
+    networks:
+      - backend
+
+### PostgreSQL ###########################################
+  postgres:
+    build: ./postgres
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - backend

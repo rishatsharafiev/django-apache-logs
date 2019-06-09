@@ -114,3 +114,5 @@ db.sqlite3
 
 .proxy
 devops/backups/
+
+.vscode
