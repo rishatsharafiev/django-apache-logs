@@ -29,7 +29,7 @@ class Command(BaseCommand):
         Log.objects.all().delete()
 
         # set up line iterator
-        iter_logs = self.iter_logs(url=source_url)
+        iter_logs = self.__iter_logs(url=source_url)
         content_length = next(iter_logs)
 
         batch_logs = []
@@ -41,7 +41,7 @@ class Command(BaseCommand):
                 content, size = line
 
                 # parse line and collect batch logs
-                result = self.parse_line(content)
+                result = self.__parse_line(content)
                 if result:
                     groupdict = result.groupdict()
                     groupdict['created_at'] = datetime.strptime(groupdict.get('date'), '%d/%b/%Y').date()
@@ -53,7 +53,7 @@ class Command(BaseCommand):
                 
                 # batch insert
                 if batch_counter == batch_size:
-                    self.batch_insert(logs=batch_logs)
+                    self.__batch_insert(logs=batch_logs)
                     batch_counter = 0
                     batch_logs.clear()
 
@@ -62,9 +62,9 @@ class Command(BaseCommand):
 
             # save edge 
             if batch_counter:
-                self.batch_insert(logs=batch_logs)
+                self.__batch_insert(logs=batch_logs)
 
-    def iter_logs(self, url: str) -> str:
+    def __iter_logs(self, url: str) -> str:
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
             response.encoding = 'utf-8'
@@ -75,10 +75,10 @@ class Command(BaseCommand):
                 if line:
                     yield line, len(line)
 
-    def parse_line(self, line: str) -> Dict:
+    def __parse_line(self, line: str) -> Dict:
         return self.regexp.search(line)
 
-    def batch_insert(self, logs: List[Dict]):
+    def __batch_insert(self, logs: List[Dict]):
         Log.objects.bulk_create([
             Log(
                 ip_address=log.get('ip_address'),
