@@ -5,7 +5,7 @@ from ..models import Log
 from ..forms import SearchForm
 from django.contrib.postgres.search import SearchVector
 
-from django.db.models import Q
+from django.db.models import Q, Count, Sum
 
 class LogListView(SearchListView):
     """Log List View"""
@@ -32,6 +32,15 @@ class LogListView(SearchListView):
         page_range = paginator.page_range[start_index:end_index]
 
         context['page_range'] = page_range
+
+        queryset = self.get_queryset()
+        
+        # aggreagation
+        context['unique_ip_address_count'] = queryset.order_by('ip_address').distinct('ip_address').count()
+        context['ip_address_counts'] = queryset.values('ip_address').annotate(total=Count('ip_address')).order_by('-total')[:10]
+        context['method_counts'] = queryset.values('method').annotate(total=Count('method')).order_by('-total')
+        context['total_size'] = queryset.aggregate(total_size=Sum('size')).get('total_size')
+
         return context
 
     def get_queryset(self):
