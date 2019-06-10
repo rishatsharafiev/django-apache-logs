@@ -13,6 +13,7 @@ class Log(models.Model):
     size = models.PositiveIntegerField(verbose_name='Размер в байтах')
 
     def get_absolute_url(self):
+        """Get absolute url to entity"""
         return reverse('logger:log-list', kwargs={'pk': self.pk})
 
     class Meta:

@@ -5,7 +5,10 @@ from django.views.generic.list import ListView
 
 
 class SearchListView(FormMixin, ListView):
+    """List View with Search View"""
+
     def get(self, request, *args, **kwargs):
+        """Override get method"""
         # From ProcessFormMixin
         form_class = self.get_form_class()
         self.form = self.get_form(form_class)
@@ -21,4 +24,5 @@ class SearchListView(FormMixin, ListView):
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
+        """Call get method in post"""
         return self.get(request, *args, **kwargs)

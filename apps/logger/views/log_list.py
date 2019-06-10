@@ -1,14 +1,12 @@
-from django.views.generic import ListView
+from datetime import datetime
+
+from django.db.models import Count, Q, Sum
+from django.http import HttpResponse
+from openpyxl import Workbook
 from utils.views import SearchListView
 
-from ..models import Log
 from ..forms import SearchForm
-from django.contrib.postgres.search import SearchVector
-
-from django.db.models import Q, Count, Sum
-from openpyxl import Workbook
-from django.http import HttpResponse
-from datetime import datetime
+from ..models import Log
 
 
 class LogListView(SearchListView):
@@ -18,13 +16,18 @@ class LogListView(SearchListView):
     paginate_by = 8
 
     def get_initial(self):
-        return { 'search': self.search }
+        """Define default initial"""
+        return {
+            'search': self.search
+        }
 
     def dispatch(self, request, *args, **kwargs):
+        """Override and store search parameter in instance property"""
         self.search = self.request.GET.get('search', '')
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        """Override template context"""
         context = super().get_context_data(**kwargs)
         paginator = context['paginator']
         page_obj = context['page_obj']
@@ -38,26 +41,32 @@ class LogListView(SearchListView):
         context['page_range'] = page_range
 
         queryset = self.get_queryset()
-        
+
         # aggreagation
         context['unique_ip_address_count'] = queryset.order_by('ip_address').distinct('ip_address').count()
-        context['ip_address_counts'] = queryset.values('ip_address').annotate(total=Count('ip_address')).order_by('-total')[:10]
+        context['ip_address_counts'] = queryset.values('ip_address').annotate(total=Count('ip_address')) \
+            .order_by('-total')[:10]
         context['method_counts'] = queryset.values('method').annotate(total=Count('method')).order_by('-total')
         context['total_size'] = queryset.aggregate(total_size=Sum('size')).get('total_size')
 
         return context
 
     def get_queryset(self):
+        """Override queryset with search filter"""
         return Log.objects.filter(
-            Q(method__icontains=self.search) |
-            Q(code__icontains=self.search) |
-            Q(ip_address__icontains=self.search) |
-            Q(uri__icontains=self.search)
+            Q(
+                method__icontains=self.search
+            ) | Q(
+                code__icontains=self.search
+            ) | Q(
+                ip_address__icontains=self.search
+            ) | Q(
+                uri__icontains=self.search
+            )
         )
 
     def export_xlsx(self, request):
         """Export xlsx"""
-
         queryset = self.get_queryset()
 
         response = HttpResponse(
@@ -93,7 +102,7 @@ class LogListView(SearchListView):
         for log in queryset:
             row_num += 1
 
-            # Define the data for each cell in the row 
+            # Define the data for each cell in the row
             row = [
                 log.method,
                 log.code,
@@ -103,7 +112,7 @@ class LogListView(SearchListView):
                 log.size,
             ]
 
-            # Assign the data for each cell of the row 
+            # Assign the data for each cell of the row
             for col_num, cell_value in enumerate(row, 1):
                 cell = worksheet.cell(row=row_num, column=col_num)
                 cell.value = cell_value
@@ -111,8 +120,9 @@ class LogListView(SearchListView):
         workbook.save(response)
 
         return response
-    
+
     def get(self, request, *args, **kwargs):
+        """Override get method with xlsx export parameter"""
         if request.GET.get('export_xlsx') == 'yes':
             return self.export_xlsx(request)
         return super().get(request, *args, **kwargs)
