@@ -6,6 +6,10 @@ from ..forms import SearchForm
 from django.contrib.postgres.search import SearchVector
 
 from django.db.models import Q, Count, Sum
+from openpyxl import Workbook
+from django.http import HttpResponse
+from datetime import datetime
+
 
 class LogListView(SearchListView):
     """Log List View"""
@@ -50,4 +54,65 @@ class LogListView(SearchListView):
             Q(ip_address__icontains=self.search) |
             Q(uri__icontains=self.search)
         )
-        return Log.objects.annotate(search=SearchVector('ip_address', 'method', 'uri', 'code',)).filter(search=self.search)
+
+    def export_xlsx(self, request):
+        """Export xlsx"""
+
+        queryset = self.get_queryset()
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = 'attachment; filename={date}-logs.xlsx'.format(
+            date=datetime.now().strftime('%Y-%m-%d'),
+        )
+        workbook = Workbook()
+
+        # Get active worksheet/tab
+        worksheet = workbook.active
+        worksheet.title = 'Logs'
+
+        # Define the titles for columns
+        columns = [
+            'method',
+            'code',
+            'ip_address',
+            'uri',
+            'created_at',
+            'size',
+        ]
+
+        row_num = 1
+
+        # Assign the titles for each cell of the header
+        for col_num, column_title in enumerate(columns, 1):
+            cell = worksheet.cell(row=row_num, column=col_num)
+            cell.value = column_title
+
+        # Iterate through all logs
+        for log in queryset:
+            row_num += 1
+
+            # Define the data for each cell in the row 
+            row = [
+                log.method,
+                log.code,
+                log.ip_address,
+                log.uri,
+                log.created_at,
+                log.size,
+            ]
+
+            # Assign the data for each cell of the row 
+            for col_num, cell_value in enumerate(row, 1):
+                cell = worksheet.cell(row=row_num, column=col_num)
+                cell.value = cell_value
+
+        workbook.save(response)
+
+        return response
+    
+    def get(self, request, *args, **kwargs):
+        if request.GET.get('export_xlsx') == 'yes':
+            return self.export_xlsx(request)
+        return super().get(request, *args, **kwargs)
