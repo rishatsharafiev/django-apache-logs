@@ -4,6 +4,7 @@ from django.db.models import Count, Q, Sum
 from django.http import HttpResponse
 from openpyxl import Workbook
 from utils.views import SearchListView
+from utils.paginator import TimeLimitedPaginator
 
 from ..forms import SearchForm
 from ..models import Log
@@ -13,7 +14,8 @@ class LogListView(SearchListView):
     """Log List View"""
 
     form_class = SearchForm
-    paginate_by = 8
+    paginate_by = 10
+    # paginator_class = TimeLimitedPaginator
 
     def get_initial(self):
         """Define default initial"""
@@ -33,7 +35,8 @@ class LogListView(SearchListView):
         page_obj = context['page_obj']
 
         index = page_obj.number - 1
-        max_index = len(paginator.page_range)
+        max_index = paginator.count
+
         start_index = index - 3 if index >= 3 else 0
         end_index = index + 3 if index <= max_index - 3 else max_index
         page_range = paginator.page_range[start_index:end_index]
@@ -53,17 +56,10 @@ class LogListView(SearchListView):
 
     def get_queryset(self):
         """Override queryset with search filter"""
-        return Log.objects.filter(
-            Q(
-                method__icontains=self.search
-            ) | Q(
-                code__icontains=self.search
-            ) | Q(
-                ip_address__icontains=self.search
-            ) | Q(
-                uri__icontains=self.search
-            )
-        )
+        if self.search:
+            return Log.objects.filter(uri__contains=self.search)
+        else:
+            return Log.objects.all()
 
     def export_xlsx(self, request):
         """Export xlsx"""

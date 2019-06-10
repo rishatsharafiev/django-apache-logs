@@ -91,10 +91,10 @@ class Command(BaseCommand):
     def __batch_insert(self, logs: List[Dict]):
         Log.objects.bulk_create([
             Log(
-                ip_address=log.get('ip_address'),
+                ip_address=log.get('ip_address')[:255],
                 created_at=log.get('created_at'),
                 method=log.get('method')[:255],
-                uri=log.get('uri'),
-                code=log.get('code') if log.get('code') != "-" else 0,
+                uri=log.get('uri')[:255],
+                code=log.get('code')[:255],
                 size=log.get('size') if log.get('size') != "-" else 0,
             ) for log in logs])
