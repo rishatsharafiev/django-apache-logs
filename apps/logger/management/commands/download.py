@@ -1,29 +1,37 @@
-from django.core.management.base import BaseCommand, CommandError
-import requests
 import re
-from apps.logger.models import Log
-from tqdm import tqdm
-from typing import List, Dict
 from datetime import datetime
+from typing import Dict, List
+
+import requests
+from apps.logger.models import Log
+from django.core.management.base import BaseCommand
+from tqdm import tqdm
 
 
 class Command(BaseCommand):
+    """Download command"""
+
     help = 'Download apache logs from external url'
-    
-    __pattern = r'(?P<ip_address>(?:[0-9]{1,3}\.){3}[0-9]{1,3}).+(?:\[(?P<date>\d+\/[a-zA-Z]{3}\/\d+):(?P<hour>\d+):(?P<minutes>\d+):(?P<seconds>\d+)\s(?P<timedelta>[\-\+]\w+)\])\s(?:\"(?P<method>.+?)\s(?P<uri>.+?)\s(?P<protocol>.[^\s]*)\")\s(?P<code>\d{3}|\-)\s(?P<size>\d+|\-)'
+
+    __pattern = r'(?P<ip_address>(?:[0-9]{1,3}\.){3}[0-9]{1,3})' \
+        r'.+(?:\[(?P<date>\d+\/[a-zA-Z]{3}\/\d+):(?P<hour>\d+):(?P<minutes>\d+):(?P<seconds>\d+)'\
+        r'\s(?P<timedelta>[\-\+]\w+)\])\s(?:\"(?P<method>.+?)\s(?P<uri>.+?)' \
+        r'\s(?P<protocol>.[^\s]*)\")\s(?P<code>\d{3}|\-)\s(?P<size>\d+|\-)'
     __regexp = re.compile(__pattern)
 
     def add_arguments(self, parser):
+        """Add arguments"""
         parser.add_argument(
             '-su',
-            '--source_url', 
-            required=True, 
-            type=str, 
-            nargs='?', 
+            '--source_url',
+            required=True,
+            type=str,
+            nargs='?',
             help='Source url'
         )
 
     def handle(self, *args, **options):
+        """Handle command"""
         source_url = options['source_url']
 
         # remove previous logs
@@ -50,7 +58,7 @@ class Command(BaseCommand):
                     batch_counter += 1
                 else:
                     self.stdout.write(self.style.WARNING(f"Can't parse log line: {content}"))
-                
+
                 # batch insert
                 if batch_counter == batch_size:
                     self.__batch_insert(logs=batch_logs)
@@ -60,7 +68,7 @@ class Command(BaseCommand):
                 # show progress
                 progress_bar.update(size)
 
-            # save edge 
+            # save edge
             if batch_counter:
                 self.__batch_insert(logs=batch_logs)
 
@@ -70,7 +78,7 @@ class Command(BaseCommand):
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
             response.encoding = 'utf-8'
-            
+
             yield int(response.headers['Content-length'])
 
             for line in response.iter_lines(chunk_size=256, decode_unicode=True):
