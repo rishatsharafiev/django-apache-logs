@@ -1,0 +1,27 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="{% static 'logger/bootstrap-4.3.1-dist/css/bootstrap.min.css' %}">
+
+        <title>Логи Apache</title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        <script src="{% static 'logger/jquery-3.3.1.slim.min.js' %}"></script>
+        <script src="{% static 'logger/popper-4.3.1.min.js' %}"></script>
+        <script src="{% static 'logger/bootstrap-4.3.1-dist/js/bootstrap.min.js' %}"></script>
+    </body>
+</html>

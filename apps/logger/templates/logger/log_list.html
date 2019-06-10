@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load replace_tags %}
+
+{% block content %}
+<div class="col-12">
+    <div class="row">
+        <div class="col-12">
+            <form>
+                <div class="row">
+                    <label for="{{form.search.auto_id}}" class="col-sm-3 col-form-label">{{form.search.label}}</label>
+                    <div class="col-sm-5">
+                        {{ form.search }}
+                    </div>
+                    <div class="col-sm-1">
+                        <button type="submit" class="btn btn-primary mb-2">Найти</button>
+                    </div>
+                    <div class="col-sm-2">
+                        <a class="btn btn-primary" href="?{% url_replace request 'export_xlsx' 'yes' %}" role="button">Скачать эксель</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">HTTP метод</th>
+                        <th scope="col">Код ответа</th>
+                        <th scope="col">IP адрес</th>
+                        <th scope="col">URI</th>
+                        <th scope="col">Дата</th>
+                        <th scope="col">Размер (байты)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        
+                {% for log in object_list %}
+                    <tr>
+                        <td>{{ log.method }}</td>
+                        <td>{{ log.code }}</td>
+                        <td>{{ log.ip_address }}</td>
+                        <td>{{ log.uri }}</td>
+                        <td>{{ log.created_at }}</td>
+                        <td>{{ log.size }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-12">
+            {% if is_paginated %}
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% url_replace request 'page' page_obj.previous_page_number %}" aria-label="Previous">
+                                  <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% if page_obj.number|add:'-4' > 1 %}
+                            <li class="page-item"><a class="page-link" href="?{% url_replace request 'page' page_obj.number|add:'-5' %}">&hellip;</a></li>
+                        {% endif %}
+                        
+                        {% for i in page_obj.paginator.page_range %}
+                            {% if page_obj.number == i %}
+                                <li class="page-item active" aria-current="page">
+                                    <span class="page-link">{{ i }}<span class="sr-only">(current)</span>
+                                    </span>
+                                </li>
+                            {% elif i > page_obj.number|add:'-5' and i < page_obj.number|add:'5' %}
+                                <li class="page-item"><a class="page-link" href="?{% url_replace request 'page' i %}">{{ i }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.paginator.num_pages > page_obj.number|add:'4' %}
+                            <li class="page-item"><a class="page-link" href="?{% url_replace request 'page' page_obj.number|add:'5' %}">&hellip;</a></li>
+                        {% endif %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% url_replace request 'page' page_obj.next_page_number %}" aria-label="Next">
+                                  <span aria-hidden="true">&raquo;</span>
+                                </a>
+                             </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+        <div class="col-12">
+            <div class="jumbotron">
+                <h1>Статистика</h1>
+                <h3>Кол-во уникальных IP: <span class="badge badge-success">{{unique_ip_address_count}}</span></h3>
+                <hr>
+                <h3>Top 10 самых распространенных IP адресов</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">IP адрес</th>
+                            <th scope="col">Кол-во</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for log in ip_address_counts %}
+                        <tr>
+                            <td>{{ log.ip_address }}</td>
+                            <td>{{ log.total }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <hr>
+                <h3>Количество HTTP методов</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">IP адрес</th>
+                            <th scope="col">Кол-во</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for log in method_counts %}
+                        <tr>
+                            <td style="width: 16.66%">{{ log.method }}</td>
+                            <td>{{ log.total }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <hr>
+                <h3>Общее кол-во переданных байт: <span class="badge badge-success">{{total_size}}</span></h3>
+            </div>
+        </div>
+    </div>    
+</div>
+{% endblock %}
