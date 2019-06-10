@@ -1,8 +1,6 @@
 from django.db import models
 from django.urls import reverse
 
-from django.contrib.postgres.indexes import GinIndex
-
 
 class Log(models.Model):
     """Log Model"""
@@ -26,7 +24,7 @@ class Log(models.Model):
         ordering = ('-created_at',)
 
         indexes = [
-            models.Index(fields=['-created_at',], name='created_at_idx'),
-            models.Index(fields=['uri',], name='uri_idx'),
-            models.Index(fields=['ip_address',], name='ip_address_idx'),
+            models.Index(fields=['-created_at'], name='created_at_idx'),
+            models.Index(fields=['uri'], name='uri_idx'),
+            models.Index(fields=['ip_address'], name='ip_address_idx'),
         ]

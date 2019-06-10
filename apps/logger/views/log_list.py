@@ -1,10 +1,9 @@
 from datetime import datetime
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Sum
 from django.http import HttpResponse
 from openpyxl import Workbook
 from utils.views import SearchListView
-from utils.paginator import TimeLimitedPaginator
 
 from ..forms import SearchForm
 from ..models import Log
