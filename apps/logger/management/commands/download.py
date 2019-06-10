@@ -9,8 +9,9 @@ from datetime import datetime
 
 class Command(BaseCommand):
     help = 'Download apache logs from external url'
-    pattern = r'(?P<ip_address>(?:[0-9]{1,3}\.){3}[0-9]{1,3}).+(?:\[(?P<date>\d+\/[a-zA-Z]{3}\/\d+):(?P<hour>\d+):(?P<minutes>\d+):(?P<seconds>\d+)\s(?P<timedelta>[\-\+]\w+)\])\s(?:\"(?P<method>.+?)\s(?P<uri>.+?)\s(?P<protocol>.[^\s]*)\")\s(?P<code>\d{3}|\-)\s(?P<size>\d+|\-)'
-    regexp = re.compile(pattern)
+    
+    __pattern = r'(?P<ip_address>(?:[0-9]{1,3}\.){3}[0-9]{1,3}).+(?:\[(?P<date>\d+\/[a-zA-Z]{3}\/\d+):(?P<hour>\d+):(?P<minutes>\d+):(?P<seconds>\d+)\s(?P<timedelta>[\-\+]\w+)\])\s(?:\"(?P<method>.+?)\s(?P<uri>.+?)\s(?P<protocol>.[^\s]*)\")\s(?P<code>\d{3}|\-)\s(?P<size>\d+|\-)'
+    __regexp = re.compile(__pattern)
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -48,8 +49,7 @@ class Command(BaseCommand):
                     batch_logs.append(groupdict)
                     batch_counter += 1
                 else:
-                    # run logger
-                    pass
+                    self.stdout.write(self.style.WARNING(f"Can't parse log line: {content}"))
                 
                 # batch insert
                 if batch_counter == batch_size:
@@ -64,6 +64,8 @@ class Command(BaseCommand):
             if batch_counter:
                 self.__batch_insert(logs=batch_logs)
 
+        self.stdout.write(self.style.SUCCESS('Successfully downloaded!!!'))
+
     def __iter_logs(self, url: str) -> str:
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
@@ -76,7 +78,7 @@ class Command(BaseCommand):
                     yield line, len(line)
 
     def __parse_line(self, line: str) -> Dict:
-        return self.regexp.search(line)
+        return self.__regexp.search(line)
 
     def __batch_insert(self, logs: List[Dict]):
         Log.objects.bulk_create([
