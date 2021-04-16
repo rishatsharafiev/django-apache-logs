@@ -16,7 +16,7 @@ requests = "==2.21.0"
 pydash = "==4.7.4"
 tqdm = "==4.32.1"
 openpyxl = "==2.6.2"
-django-debug-toolbar = "==1.11"
+django-debug-toolbar = "==1.11.1"
 
 [dev-packages]
 
